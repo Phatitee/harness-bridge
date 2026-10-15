@@ -2,7 +2,9 @@
 
 A local gateway that lets Claude Code choose models from **Copilot, Codex and AGY (Antigravity)** through one `/model` list. The CLI is called `proxyup`.
 
-**Early local alpha.** Provider authentication is delegated to external adapters. Offline contract tests are included; real account login and full Claude Code sessions must be checked on the release platforms. This repository does not include credentials or third-party proxy binaries.
+For non-Anthropic models, harness-bridge also supplies a **Tool Manual** explaining the Claude Code tools actually present in each request: what they do, when to use them, how to form arguments and how to interpret results. The aim is to help another model work with the existing harness, without replacing Claude Code or removing its tools.
+
+**Early alpha.** Provider authentication is delegated to external adapters. The Tool Manual has been implemented but has not been runtime-tested; it is not a guarantee of equivalent tool performance across models. Real account login and full Claude Code sessions remain manual release checks. No credentials or third-party proxy binaries are included.
 
 ```mermaid
 flowchart LR
@@ -10,20 +12,21 @@ flowchart LR
     Auth --> Catalog[Account model catalog]
     Catalog --> Claude[Claude Code /model]
     Claude --> Gateway[Gateway :8321]
-    Gateway --> Copilot[Copilot proxy :4141]
-    Gateway --> CLI[CLIProxyAPI :8317]
+    Gateway --> Manual[Resolve model + append Tool Manual when enabled]
+    Manual --> Copilot[Copilot proxy :4141]
+    Manual --> CLI[CLIProxyAPI :8317]
     Copilot --> GH[GitHub Copilot]
     CLI --> Codex[Codex]
     CLI --> AGY[Antigravity]
 ```
 
-## Local development install
+## Quick start from source
 
 Requirements: **Node.js 22+**, Git, Claude Code, and the backend executable(s) for the providers you select.
 
 ```sh
-npm test
-npm run check
+git clone https://github.com/Phatitee/harness-bridge.git
+cd harness-bridge
 
 # Run without changing your existing proxyup installation:
 node bin/proxyup.mjs --help
@@ -41,7 +44,42 @@ Inside Claude Code, type `/model`. The list is generated from the current catalo
 
 Claude Code must support gateway model discovery and the custom `modelPicker` settings used here. The inspected local build was `2.1.300` and contains both features; a complete interactive session on a clean installation remains a manual release check. If your build does not expose the custom picker, use an explicit `proxyup run --model <id>` and verify gateway support before expecting `/model` discovery.
 
-To install the `proxyup` command globally for local development, use `npm link`. **If you already use another `proxyup`, keep using `node bin/proxyup.mjs` until you deliberately switch installations.** No npm package or GitHub repository has been published by this local setup.
+The core has no production npm dependencies or build step. Install the selected provider adapters separately as described below before setup.
+
+To install the `proxyup` command globally from this checkout, use `npm link`. **If you already use another `proxyup`, keep using `node bin/proxyup.mjs` until you deliberately switch installations.** Source is available in this repository; an npm package release has not been published.
+
+## Tool Manual: teaching models the harness tools
+
+The gateway builds guidance from `tools` in the current request and appends it to the existing system prompt before forwarding. A change in the request's tools or selected model is reflected on that next request. The guide is supplementary text: the full original schemas continue to define valid calls.
+
+| What the model learns | Where it comes from |
+| --- | --- |
+| Which tools are visible now | Exact tool names supplied by Claude Code, including MCP definitions |
+| When to choose a tool | Original guidance for recognized native tools and the live description for other tools |
+| How to supply inputs | Actual required fields, property/type summaries and simple illustrative arguments |
+| What to do with results | Guidance for completed calls, errors, truncation and running/background work |
+
+The guide does not guess tools missing from the request. Complex/ref-dependent schemas receive no invented argument example; deferred tools are identified as needing discovery/loading. Descriptions and field summaries are compact, while every original definition remains intact. No extra model call is used to generate the guide.
+
+Add or edit this field in your installation's `config.json`, preserving its other settings:
+
+```json
+{
+  "toolManual": {
+    "mode": "non-anthropic"
+  }
+}
+```
+
+| Mode | Effect |
+| --- | --- |
+| `non-anthropic` | Default, also used when the field is absent. Attach guidance for resolved upstream IDs that do not look like Anthropic Claude models. |
+| `all` | Attach guidance for every model with named tools, including custom model naming schemes. |
+| `off` | Forward without adding the manual. |
+
+Restart this repository's gateway after code/config changes. It preserves existing prompt blocks, tool schemas and permissions. Tools are still executed by Claude Code/MCP on your machine. No separate `/toolist` command, permanent per-session tool inventory or model fine-tuning is installed.
+
+The guide adds prompt tokens and cannot fix a rejected schema, unsupported tool protocol or a model without function calling. See the [Tool Manual reference](docs/tool-manual.md), [source research](docs/research/claude-code-tools.md) and [rules design](docs/tool-rules-design.md) for the implementation boundaries.
 
 ## Provider dependencies and login
 
@@ -147,9 +185,7 @@ CLI data defaults to compact TOON-style objects/tables; use `--json` for machine
 
 The gateway preserves tool schemas, tool results and streams for the protocol adapters to translate. It never executes local tools itself and does not silently remove them. Tool execution stays in Claude Code/MCP with its existing permissions.
 
-For non-Anthropic models, a **Tool Manual** is now appended automatically at the gateway boundary. It explains the actual tools in each request: when to use them, their required inputs, simple argument illustrations and how to interpret results. Existing configs opt in by default; set `toolManual.mode` to `all` or `off` to override family-based selection. See [Tool Manual](docs/tool-manual.md) for the flow, configuration and limitations.
-
-Catalog inclusion is **not** tool certification: every model currently has `capability: unknown`. This alpha does not promise that all models support every Claude Code feature or fix all Gemini schema incompatibilities. Schema adaptation, tool round-trip probes and an interactive toolist selector are separate planned work. The new manual feature has not been runtime-tested at the user's request; previously recorded suite results predate it.
+Catalog inclusion is **not** tool certification: every model currently has `capability: unknown`. This alpha does not promise that all models support every Claude Code feature or fix all Gemini schema incompatibilities. Schema adaptation, tool round-trip probes and an interactive toolist selector are separate planned work. The Tool Manual feature has not been runtime-tested; previously recorded suite results predate it.
 
 Other boundaries: one active account per provider; no automatic adapter installation/version upgrades; no refresh-in-place of an already running gateway after login; no account-drain coordinator; no Windows launcher or service integration yet. Config writes assume one setup/login process at a time.
 
