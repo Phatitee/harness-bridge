@@ -1,0 +1,12 @@
+node_modules/
+coverage/
+*.tgz
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.proxyup/
+.superpowers/
+credentials/
+secrets.json
