@@ -147,7 +147,9 @@ CLI data defaults to compact TOON-style objects/tables; use `--json` for machine
 
 The gateway preserves tool schemas, tool results and streams for the protocol adapters to translate. It never executes local tools itself and does not silently remove them. Tool execution stays in Claude Code/MCP with its existing permissions.
 
-Catalog inclusion is **not** tool certification: every model currently has `capability: unknown`. This alpha does not promise that all models support every Claude Code feature or fix all Gemini schema incompatibilities. Schema adaptation, tool round-trip probes and toolist are separate planned work.
+For non-Anthropic models, a **Tool Manual** is now appended automatically at the gateway boundary. It explains the actual tools in each request: when to use them, their required inputs, simple argument illustrations and how to interpret results. Existing configs opt in by default; set `toolManual.mode` to `all` or `off` to override family-based selection. See [Tool Manual](docs/tool-manual.md) for the flow, configuration and limitations.
+
+Catalog inclusion is **not** tool certification: every model currently has `capability: unknown`. This alpha does not promise that all models support every Claude Code feature or fix all Gemini schema incompatibilities. Schema adaptation, tool round-trip probes and an interactive toolist selector are separate planned work. The new manual feature has not been runtime-tested at the user's request; previously recorded suite results predate it.
 
 Other boundaries: one active account per provider; no automatic adapter installation/version upgrades; no refresh-in-place of an already running gateway after login; no account-drain coordinator; no Windows launcher or service integration yet. Config writes assume one setup/login process at a time.
 

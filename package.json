@@ -6,7 +6,7 @@
   "license": "MIT",
   "engines": { "node": ">=22" },
   "bin": { "proxyup": "bin/proxyup.mjs" },
-  "files": ["bin", "src", "README.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md", "docs/architecture.md", "docs/adapters.md", "docs/usage.md"],
+  "files": ["bin", "src", "README.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md", "docs/architecture.md", "docs/adapters.md", "docs/usage.md", "docs/tool-manual.md", "docs/tool-rules-design.md", "docs/research"],
   "scripts": {
     "test": "node --test",
     "check": "node scripts/check.mjs",

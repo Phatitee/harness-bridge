@@ -19,6 +19,7 @@ export function defaultConfig() {
     providers: Object.fromEntries(PROVIDERS.map(id => [id, { enabled: false, accountRevision: 0, modelIds: [] }])),
     defaultModel: null,
     requestTimeoutMs: 180000,
+    toolManual: { mode: 'non-anthropic' },
   };
 }
 export function loopbackUrl(value) {
@@ -32,6 +33,7 @@ export function loopbackUrl(value) {
 export function validateConfig(config) {
   if (config.version !== 1 || config.gateway?.host !== '127.0.0.1' || !Number.isInteger(config.gateway.port) || config.gateway.port < 1 || config.gateway.port > 65535) throw new GatewayError('CONFIG', 'Expected config version 1 and a loopback gateway with port 1–65535.');
   if (!Number.isInteger(config.requestTimeoutMs) || config.requestTimeoutMs < 1000 || config.requestTimeoutMs > 3600000) throw new GatewayError('CONFIG', 'requestTimeoutMs must be between 1000 and 3600000.');
+  if (config.toolManual !== undefined && (!config.toolManual || typeof config.toolManual !== 'object' || !['non-anthropic', 'all', 'off'].includes(config.toolManual.mode))) throw new GatewayError('CONFIG', 'toolManual.mode must be non-anthropic, all or off.');
   for (const name of ['copilot', 'cliproxy']) {
     const backend = config.backends?.[name];
     loopbackUrl(backend?.url);

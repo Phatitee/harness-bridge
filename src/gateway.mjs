@@ -5,6 +5,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { backendFor, backendKey } from './config.mjs';
 import { resolveRoute } from './catalog.mjs';
 import { GatewayError } from './errors.mjs';
+import { withToolManual } from './tool-manual.mjs';
 
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } });
 function equal(a, b) { const x = Buffer.from(a); const y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); }
@@ -32,8 +33,11 @@ export function createHandler(config, secrets, catalog, { fetchImpl = fetch, env
       for (const name of ['anthropic-version', 'anthropic-beta', 'x-client-request-id', 'accept']) if (request.headers.has(name)) headers.set(name, request.headers.get(name));
       headers.set('content-type', 'application/json');
       if (key) { headers.set('authorization', `Bearer ${key}`); headers.set('x-api-key', key); }
+      const upstreamPayload = withToolManual({ ...payload, model: target.upstreamModel }, config, target.upstreamModel);
+      const upstreamBody = JSON.stringify(upstreamPayload);
+      if (Buffer.byteLength(upstreamBody) > LIMIT) return json({ error: { message: 'Request plus tool manual exceeds 16 MiB. Reduce context or set toolManual.mode to off.' } }, 413);
       const upstream = await fetchImpl(`${config.backends[backend].url}${url.pathname}${url.search}`, {
-        method: 'POST', headers, body: JSON.stringify({ ...payload, model: target.upstreamModel }),
+        method: 'POST', headers, body: upstreamBody,
         signal: AbortSignal.any([request.signal, AbortSignal.timeout(config.requestTimeoutMs)]),
       });
       const responseHeaders = new Headers();

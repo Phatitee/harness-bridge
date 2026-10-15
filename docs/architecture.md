@@ -7,6 +7,7 @@ The gateway is local and account-owned. Users enable only the providers they nee
 3. The registry fetches only enabled backends, separates shared models using metadata or explicit IDs, and exposes namespaced aliases.
 4. `proxyup run` checks the authenticated gateway identity and builds per-launch Claude settings from its current catalog.
 5. Anthropic Messages and count-tokens requests are authenticated and routed to the relevant protocol adapter.
+   After route resolution, the default Tool Manual describes the request's named tools to non-Anthropic models while preserving the original schema and prompt blocks. This adds no model calls or tool execution.
 6. SSE and tool results return through the gateway. Claude Code executes local tools.
 
 Gateway routes:
@@ -32,8 +33,9 @@ Managed process startup preflights ports and refuses collisions. Closing a foreg
 | `processes.mjs` | Bounded login/child lifecycle, port ownership and shutdown |
 | `catalog.mjs` | Discovery, metadata partition and route resolution |
 | `gateway.mjs` | Authenticated web handler and streaming Node HTTP bridge |
+| `tool-manual.mjs` | Per-request tool explanations and supplemental system guidance |
 | `runtime.mjs` | Compose listener, backend children and catalog |
 | `claude.mjs` | Temporary settings and optional removable launcher |
 | `cli.mjs` | User-facing commands and onboarding |
 
-Future work: adapter version negotiation, transactional account switching, native services, streaming probes, schema adapters and toolist. These are not prerequisites hidden behind claims of completed alpha features.
+Future work: adapter version negotiation, transactional account switching, native services, streaming probes, schema adapters and an interactive toolist selector. Tool Manual guidance is implemented separately and is not protocol certification.
