@@ -1,4 +1,4 @@
-# Claude Provider Gateway
+# harness-bridge
 
 A local gateway that lets Claude Code choose models from **Copilot, Codex and AGY (Antigravity)** through one `/model` list. The CLI is called `proxyup`.
 
